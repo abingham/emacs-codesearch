@@ -113,32 +113,38 @@
   (expand-file-name (or codesearch-global-csearchindex
                         (codesearch--find-dominant-csearchindex dir))))
 
-(defun codesearch-run-cindex (&optional callback dir &rest args)
-  "Run the cindex command passing `args' arguments."
-  (let* ((search-dir (or dir default-directory))
-         (index-file (codesearch--csearchindex search-dir))
-         (indexpath-args (list "-indexpath" index-file))
-         (full-args (append indexpath-args args)))
-    (deferred:$
-      (apply 'deferred:process codesearch-cindex full-args)
-      (deferred:nextc it
-        callback))))
-
-(defun codesearch-run-csearch (&optional callback dir &rest args)
-  "Run the csearch command passing `args' arguments."
-  (let* ((search-dir (or dir default-directory))
-         (index-file (codesearch--csearchindex search-dir))
-         (indexpath-args (list "-indexpath" index-file))
-         (full-args (append indexpath-args args)))
-    (deferred:$
-      (apply 'deferred:process codesearch-csearch full-args)
-      (deferred:nextc it
-        callback))))
-
 (defun codesearch--handle-output (output)
   "Append process output to standard buffer."
   (with-current-buffer (get-buffer-create codesearch-output-buffer)
     (insert output)))
+
+(defun codesearch--run-tool (tool &optional callback dir &rest args)
+  "Run the `tool' command passing `args' arguments.
+
+`callback' is a 1-arity function that will be give the full
+output of the command when it completes. `dir' is the directory
+from which any index-file searches will start. `args' is a list
+of any arguments to be passed to the tool. Note that and
+`-indexpath <index file>' argument will *always* be supplied to
+the tool command, and it will come before `args' in the
+invocation."
+  (let* ((callback (or callback 'codesearch--handle-output))
+         (search-dir (or dir default-directory))
+         (index-file (codesearch--csearchindex search-dir))
+         (indexpath-args (list "-indexpath" index-file))
+         (full-args (append indexpath-args args)))
+    (deferred:$
+      (apply 'deferred:process tool full-args)
+      (deferred:nextc it
+        callback))))
+
+(defun codesearch-run-cindex (&optional callback dir &rest args)
+  "Run the cindex command passing `args' arguments."
+  (codesearch--run-tool codesearch-cindex callback dir args))
+
+(defun codesearch-run-csearch (&optional callback dir &rest args)
+  "Run the csearch command passing `args' arguments."
+  (codesearch--run-tool codesearch-csearch callback dir args))
 
 ;;;###autoload
 (defun codesearch-build-index (dir)
