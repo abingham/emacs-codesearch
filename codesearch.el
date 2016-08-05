@@ -95,6 +95,11 @@
   :type '(string)
   :group 'codesearch)
 
+(defcustom codesearch-output-buffer "*codesearch*"
+  "Buffer where miscellaneous tool output gets written."
+  :type '(string)
+  :group 'codesearch)
+
 (defun codesearch--find-dominant-csearchindex (dir)
   "Search `dir' and its ancestors for the index, returning the path if found."
   (let* ((start-dir (expand-file-name dir))
@@ -130,20 +135,29 @@
       (deferred:nextc it
         callback))))
 
+(defun codesearch--handle-output (output)
+  "Append process output to standard buffer."
+  (with-current-buffer (get-buffer-create codesearch-output-buffer)
+    (insert output)))
+
 ;;;###autoload
 (defun codesearch-build-index (dir)
   "Add the contents of DIR to the index."
   (interactive
    (list
     (read-directory-name "Directory: ")))
-  (codsearch-run-cindex nil nil dir))
+  (codsearch-run-cindex
+   (codesearch--handle-output)
+   nil
+   dir))
 
 ;;;###autoload
 (defun codesearch-update-index ()
   "Rescan all of the directories currently in the index, updating
 the index with the new contents."
   (interactive)
-  (codesearch-run-cindex))
+  (codesearch-run-cindex
+   'codesearch--handle-output))
 
 ;;;###autoload
 (defun codesearch-reset ()

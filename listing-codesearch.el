@@ -129,38 +129,42 @@ BUFF is assumed to contain the output from running csearch.
                  'listing-codesearch-pattern-history (car listing-codesearch-pattern-history))
     (read-string "File pattern: " ".*"
                  'listing-codesearch-file-pattern-history (car listing-codesearch-file-pattern-history))))
-  (let ((switch-to-visible-buffer t)
-        (buff (get-buffer-create "*codesearch-results*"))
-        (file-pattern (if (memq system-type '(windows-nt ms-dos))
+  (let ((file-pattern (if (memq system-type '(windows-nt ms-dos))
                           (replace-regexp-in-string "/" "\\\\\\\\" file-pattern)
                         file-pattern)))
-    (with-current-buffer buff
-      (read-only-mode 0)
-      (erase-buffer)
-      (codesearch-run-csearch
-       (lambda (result)
-         (insert result)
-         (listing-codesearch--make-filenames-clickable (current-buffer))
-         (pop-to-buffer (current-buffer)))
-       default-directory
-       "-f" file-pattern
-       "-n" pattern))))
+    (codesearch-run-csearch
+     (lambda (result)
+       (let ((switch-to-visible-buffer t)
+             (buff (get-buffer-create "*codesearch-results*")))
+         (with-current-buffer buff
+           (read-only-mode 0)
+           (erase-buffer)
+           (insert result)
+           (listing-codesearch--make-filenames-clickable buff)
+           (pop-to-buffer buff))))
+     default-directory
+     "-f" file-pattern
+     "-n"
+     pattern)))
 
 (defun listing-codesearch--handle-listing (results)
-  (with-current-buffer "*codesearch-directories*"
-    (let ((dirs (-slice (split-string results "\n") 0 -1)))
+  (let ((buff (get-buffer-create "*llamas codesearch-directories*"))
+        (switch-to-visible-buffer t)
+        (dirs (-slice (split-string results "\n") 0 -1)))
+    (with-current-buffer buff
       (erase-buffer)
       (insert "[codesearch: currently indexed directories]\n\n")
       (mapcar
        (lambda (dir) (insert (format "%s\n" dir)))
-       dirs))))
+       dirs))
+    (pop-to-buffer buff)))
 
 ;;;###autoload
 (defun listing-codesearch-list-directories ()
   "List the directories currently being indexed."
   (interactive)
   (codesearch-run-cindex
-   'codesearch--handle-listing
+   'listing-codesearch--handle-listing
    nil
    "-list"))
 
