@@ -4,7 +4,7 @@
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
-;; Package-Requires: ((dash "2.8.0"))
+;; Package-Requires: ((dash "2.8.0") (deferred "0.4.0"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -21,7 +21,7 @@
 ;; https://github.com/abingham/emacs-codesearch
 ;;
 ;; For more details on codesearch, see its project page at
-;; https://github.com/google/codesearc
+;; https://github.com/google/codesearch
 ;;
 ;; Installation:
 ;;
@@ -68,6 +68,7 @@
 (eval-when-compile
   (require 'cl))
 (require 'dash)
+(require 'deferred)
 
 (defgroup codesearch nil
   "Variables related to codesearch."
@@ -107,40 +108,27 @@
   (expand-file-name (or codesearch-global-csearchindex
                         (codesearch--find-dominant-csearchindex dir))))
 
-(defun codesearch-run-cindex (&optional callback dir buffer &rest args)
+(defun codesearch-run-cindex (&optional callback dir &rest args)
   "Run the cindex command passing `args' arguments."
   (let* ((search-dir (or dir default-directory))
          (index-file (codesearch--csearchindex search-dir))
          (indexpath-args (list "-indexpath" index-file))
          (full-args (append indexpath-args args)))
-    (set-process-sentinel
-     (apply 'start-file-process
-            "cindex"
-            buffer
-            codesearch-cindex
-            full-args)
-     callback)))
+    (deferred:$
+      (apply 'deferred:process codesearch-cindex full-args)
+      (deferred:nextc it
+        callback))))
 
-(defun codesearch--handle-listing (process event)
-  (when (equal event "finished\n")
-    (with-current-buffer (get-buffer-create "*codesearch-directories*")
-      (let ((dirs (-slice (split-string (buffer-string) "\n") 0 -1)))
-        (erase-buffer)
-        (insert "[codesearch: currently indexed directories]\n\n")
-        (mapcar
-         (lambda (dir) (insert (format "%s\n" dir)))
-         dirs)))))
-
-;;;###autoload
-(defun codesearch-list-directories ()
-  "List the directories currently being indexed."
-  (interactive)
-  (with-temp-buffer
-    (codesearch-run-cindex
-     'codesearch--handle-listing
-     nil
-     (current-buffer)
-     "-list")))
+(defun codesearch-run-csearch (&optional callback dir &rest args)
+  "Run the csearch command passing `args' arguments."
+  (let* ((search-dir (or dir default-directory))
+         (index-file (codesearch--csearchindex search-dir))
+         (indexpath-args (list "-indexpath" index-file))
+         (full-args (append indexpath-args args)))
+    (deferred:$
+      (apply 'deferred:process codesearch-csearch full-args)
+      (deferred:nextc it
+        callback))))
 
 ;;;###autoload
 (defun codesearch-build-index (dir)
@@ -148,20 +136,20 @@
   (interactive
    (list
     (read-directory-name "Directory: ")))
-  (codesearch--run-cindex dir))
+  (codsearch-run-cindex nil nil dir))
 
 ;;;###autoload
 (defun codesearch-update-index ()
   "Rescan all of the directories currently in the index, updating
 the index with the new contents."
   (interactive)
-  (codesearch--run-cindex))
+  (codesearch-run-cindex))
 
 ;;;###autoload
 (defun codesearch-reset ()
   "Reset (delete) the codesearch index."
   (interactive)
-  (codesearch--run-cindex "-reset"))
+  (codesearch-run-cindex nil nil "-reset"))
 
 (provide 'codesearch)
 
