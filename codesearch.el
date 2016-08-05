@@ -116,6 +116,8 @@
 (defun codesearch--handle-output (output)
   "Append process output to standard buffer."
   (with-current-buffer (get-buffer-create codesearch-output-buffer)
+    (goto-char (point-max))
+    (insert "-----\n")
     (insert output)))
 
 (defun codesearch--run-tool (tool &optional callback dir &rest args)
@@ -140,11 +142,11 @@ invocation."
 
 (defun codesearch-run-cindex (&optional callback dir &rest args)
   "Run the cindex command passing `args' arguments."
-  (codesearch--run-tool codesearch-cindex callback dir args))
+  (apply 'codesearch--run-tool codesearch-cindex callback dir args))
 
 (defun codesearch-run-csearch (&optional callback dir &rest args)
   "Run the csearch command passing `args' arguments."
-  (codesearch--run-tool codesearch-csearch callback dir args))
+  (apply 'codesearch--run-tool codesearch-csearch callback dir args))
 
 ;;;###autoload
 (defun codesearch-build-index (dir)
@@ -152,8 +154,8 @@ invocation."
   (interactive
    (list
     (read-directory-name "Directory: ")))
-  (codsearch-run-cindex
-   (codesearch--handle-output)
+  (codesearch-run-cindex
+   nil
    nil
    dir))
 
