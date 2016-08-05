@@ -1,3 +1,5 @@
+**This is very initial work right now**
+
 # emacs-codesearch: Tools for using codesearch from Emacs
 
 These extensions allow you to use
