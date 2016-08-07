@@ -4,7 +4,7 @@
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
-;; Package-Requires: ((dash "2.8.0") (deferred "0.4.0"))
+;; Package-Requires: ((dash "2.8.0") (s "1.10.0"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -68,7 +68,7 @@
 (eval-when-compile
   (require 'cl))
 (require 'dash)
-(require 'deferred)
+(require 's)
 
 (defgroup codesearch nil
   "Variables related to codesearch."
@@ -105,48 +105,47 @@
   (let* ((start-dir (expand-file-name dir))
          (index-dir (locate-dominating-file start-dir codesearch-csearchindex)))
     (if index-dir
-        (concat index-dir codesearch-csearchindex)
-      (error "Can't find csearchindex"))))
+        (concat index-dir codesearch-csearchindex))))
 
 (defun codesearch--csearchindex (dir)
   "Get the full path to the index to use for searches starting in `dir'."
   (expand-file-name (or codesearch-global-csearchindex
-                        (codesearch--find-dominant-csearchindex dir))))
+                        (codesearch--find-dominant-csearchindex dir)
+                        (error "Can't find csearchindex"))))
 
-(defun codesearch--handle-output (output)
+(defun codesearch--handle-output (process output)
   "Append process output to standard buffer."
   (with-current-buffer (get-buffer-create codesearch-output-buffer)
     (goto-char (point-max))
-    (insert "-----\n")
+    (insert "\n")
     (insert output)))
 
-(defun codesearch--run-tool (tool &optional callback dir &rest args)
-  "Run the `tool' command passing `args' arguments.
+(defun codesearch--run-tool (dir command args)
+  "Run `command' with CSEARCHINDEX variable set correctly.
 
-`callback' is a 1-arity function that will be give the full
-output of the command when it completes. `dir' is the directory
-from which any index-file searches will start. `args' is a list
-of any arguments to be passed to the tool. Note that and
-`-indexpath <index file>' argument will *always* be supplied to
-the tool command, and it will come before `args' in the
-invocation."
-  (let* ((callback (or callback 'codesearch--handle-output))
-         (search-dir (or dir default-directory))
+`dir' is the directory from which any index-file searches will
+start. Returns the process object."
+  (message command)
+  (let* ((search-dir (or dir default-directory))
          (index-file (codesearch--csearchindex search-dir))
-         (indexpath-args (list "-indexpath" index-file))
-         (full-args (append indexpath-args args)))
-    (deferred:$
-      (apply 'deferred:process tool full-args)
-      (deferred:nextc it
-        callback))))
+         (process-environment (copy-alist process-environment)))
+    (setenv "CSEARCHINDEX" (expand-file-name index-file))
+    (apply
+     'start-process
+     "codesearch"
+     nil
+     command
+     args)))
 
-(defun codesearch-run-cindex (&optional callback dir &rest args)
+(defun codesearch-run-cindex (&optional dir &rest args)
   "Run the cindex command passing `args' arguments."
-  (apply 'codesearch--run-tool codesearch-cindex callback dir args))
+  (codesearch--run-tool
+   dir codesearch-cindex args))
 
-(defun codesearch-run-csearch (&optional callback dir &rest args)
+(defun codesearch-run-csearch (&optional dir &rest args)
   "Run the csearch command passing `args' arguments."
-  (apply 'codesearch--run-tool codesearch-csearch callback dir args))
+  (codesearch--run-tool
+   dir codesearch-csearch args))
 
 ;;;###autoload
 (defun codesearch-build-index (dir)
@@ -154,24 +153,26 @@ invocation."
   (interactive
    (list
     (read-directory-name "Directory: ")))
-  (codesearch-run-cindex
-   nil
-   nil
-   dir))
+  (set-process-filter
+   (codesearch-run-cindex nil dir)
+   'codesearch--handle-output))
 
 ;;;###autoload
 (defun codesearch-update-index ()
   "Rescan all of the directories currently in the index, updating
 the index with the new contents."
   (interactive)
-  (codesearch-run-cindex
+  (set-process-filter
+   (codesearch-run-cindex)
    'codesearch--handle-output))
 
 ;;;###autoload
 (defun codesearch-reset ()
   "Reset (delete) the codesearch index."
   (interactive)
-  (codesearch-run-cindex nil nil "-reset"))
+  (set-process-filter
+   (codesearch-run-cindex nil "-reset")
+   'codesearch--handle-output))
 
 (provide 'codesearch)
 
