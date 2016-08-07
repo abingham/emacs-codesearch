@@ -120,9 +120,6 @@ BUFF is assumed to contain the output from running csearch.
 
 (defvar listing-codesearch-file-pattern-history nil)
 
-(defun listing-codesearch--results-buffer ()
-  (get-buffer-create "*codesearch-results*"))
-
 ;;;###autoload
 (defun listing-codesearch-search (pattern file-pattern)
   "Search files matching FILE-PATTERN in the index for PATTERN."
@@ -132,33 +129,31 @@ BUFF is assumed to contain the output from running csearch.
                  'listing-codesearch-pattern-history (car listing-codesearch-pattern-history))
     (read-string "File pattern: " ".*"
                  'listing-codesearch-file-pattern-history (car listing-codesearch-file-pattern-history))))
-  (let ((file-pattern (if (memq system-type '(windows-nt ms-dos))
-                          (replace-regexp-in-string "/" "\\\\\\\\" file-pattern)
-                        file-pattern))
-        (buff (get-buffer-create "*codesearch-results*"))
-        (proc (codesearch-run-csearch
-               default-directory
-               "-f" file-pattern
-               "-n"
-               pattern)))
+  (lexical-let ((file-pattern (if (memq system-type '(windows-nt ms-dos))
+                                  (replace-regexp-in-string "/" "\\\\\\\\" file-pattern)
+                                file-pattern))
+                (buff (get-buffer-create "*codesearch-results*"))
+                (proc (codesearch-run-csearch
+                       default-directory
+                       "-f" file-pattern
+                       "-n"
+                       pattern)))
 
-    (with-current-buffer (listing-codesearch--results-buffer)
+    (with-current-buffer buff
       (read-only-mode 0)
       (erase-buffer))
 
     (set-process-sentinel proc
-     (lambda (process event)
-       (when (string-equal event "finished\n")
-         (let ((buff (listing-codesearch--results-buffer)))
+     #'(lambda (process event)
+         (when (string-equal event "finished\n")
            (listing-codesearch--make-filenames-clickable buff)
-           (pop-to-buffer buff)))))
+           (pop-to-buffer buff))))
 
     (set-process-filter proc
-     (lambda (process output)
-       (let ((switch-to-visible-buffer t)
-             (buff (listing-codesearch--results-buffer)))
-         (with-current-buffer buff
-           (insert output)))))))
+     #'(lambda (process output)
+         (let ((switch-to-visible-buffer t))
+           (with-current-buffer buff
+             (insert output)))))))
 
 (defun listing-codesearch--handle-listing (results)
   (let ((buff (get-buffer-create "*llamas codesearch-directories*"))
@@ -176,10 +171,21 @@ BUFF is assumed to contain the output from running csearch.
 (defun listing-codesearch-list-directories ()
   "List the directories currently being indexed."
   (interactive)
-  (codesearch-run-cindex
-   'listing-codesearch--handle-listing
-   nil
-   "-list"))
+  (lexical-let ((buff (get-buffer-create "*codesearch-directories*"))
+                (proc (codesearch-run-cindex
+                       nil
+                       "-list")))
+    (with-current-buffer buff
+      (read-only-mode 0)
+      (erase-buffer)
+      (insert "[codesearch: currently indexed directories]\n\n")
+      (pop-to-buffer buff))
+
+    (set-process-filter
+     proc
+     #'(lambda (process output)
+         (with-current-buffer buff
+           (insert output))))))
 
 (provide 'listing-codesearch)
 
