@@ -125,7 +125,7 @@
 
 `dir' is the directory from which any index-file searches will
 start. Returns the process object."
-  (message command)
+  ;;  (message command)
   (let* ((search-dir (or dir default-directory))
          (index-file (codesearch--csearchindex search-dir))
          (process-environment (copy-alist process-environment)))
@@ -142,7 +142,7 @@ start. Returns the process object."
   (codesearch--run-tool
    dir codesearch-cindex args))
 
-(defun codesearch-run-csearch (&optional dir &rest args)
+(defun codesearch-run-csearch (&optional dir args)
   "Run the csearch command passing `args' arguments."
   (codesearch--run-tool
    dir codesearch-csearch args))
