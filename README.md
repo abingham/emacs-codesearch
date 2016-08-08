@@ -1,4 +1,4 @@
-# emacs-codesearch: Tools for using codesearch from Emacs
+<h1>emacs-codesearch: Tools for using codesearch from Emacs</h1>
 
 These extensions allow you to use
 [codesearch](https://github.com/google/codesearch) from Emacs.
@@ -19,11 +19,28 @@ the codesearch tools. Currently we have two interfaces:
 
 These UI packages can be used independently or together.
 
-## Core functionality from `codesearch.el`
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
+**Table of Contents**
+
+- [Core functionality from `codesearch.el`](#core-functionality-from-codesearchel)
+    - [Installation](#installation)
+    - [Configuring your index files(s)](#configuring-your-index-filess)
+    - [Further configuration](#further-configuration)
+    - [Low-level codsearch commands](#low-level-codsearch-commands)
+- [List-oriented UI with `listing-codesearch.el`](#list-oriented-ui-with-listing-codesearchel)
+    - [Installation](#installation)
+    - [Configuration](#configuration)
+    - [Commands](#commands)
+- [Helm integration with `helm-codesearch.el`](#helm-integration-with-helm-codesearchel)
+
+<!-- markdown-toc end -->
+
+
+# Core functionality from `codesearch.el`
 
 `codesearch.el` is needed for any interaction with the codesearch tools.
 
-### Installation
+## Installation
 
 It can be installed from [melpa](https://melpa.org):
 ```
@@ -38,7 +55,7 @@ Then just `require` it somewhere in your Emacs configuration:
 (Note that the various UI packages will also `require` codesearch, so this step
 may not be strictly necessary).
 
-### Configuring your index files(s)
+## Configuring your index files(s)
 
 The codesearch tools use an index file for storing information about the symbols
 found in your source code. `codesearch.el` provides two modes for specifying the
@@ -63,12 +80,12 @@ indices using `codesearch.el`. You'll need to create those outside of Emacs
 until
 [the issue is addressed](https://github.com/abingham/emacs-codesearch/issues/4).
 
-### Further configuration
+## Further configuration
 
 You can also configure other aspects of `codesearch.el`, though that's not
 generally necessary. See the configuration group `codesearch` for full details.
 
-### Low-level codsearch commands
+## Low-level codsearch commands
 
 The core codesearch package provides a number of commands that you need to use
 in order to manage your indices.
@@ -79,12 +96,12 @@ in order to manage your indices.
    index by rescanning all of the directories that it already contains.
  * `codesearch-reset` - This removes the currently configured index completely.
 
-## List-oriented UI with `listing-codesearch.el`
+# List-oriented UI with `listing-codesearch.el`
 
 `listing-codesearch` provides a simple, list-oriented UI for displaying and
 interacting with codesearch results.
 
-### Installation
+## Installation
 
 It can be installed from [melpa](https://melpa.org):
 ```
@@ -96,12 +113,12 @@ Then just `require` it somewhere in your Emacs configuration:
 (require 'listing-codesearch)
 ```
 
-### Configuration
+## Configuration
 
 `listing-codesearch` doesn't typically require any configuration, but check the
 `listing-codesearch` configuration group for full details.
 
-### Commands
+## Commands
 
 `listing-codesearch` provides two functions for displaying information.
 
@@ -112,6 +129,6 @@ Then just `require` it somewhere in your Emacs configuration:
  * `listing-codesearch-list-directories` - List the directories currently index
    in the currently configured index.
 
-## Helm integration with `helm-codesearch.el`
+# Helm integration with `helm-codesearch.el`
 
 **TODO**
