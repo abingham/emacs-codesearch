@@ -127,7 +127,10 @@
 start. Returns the process object."
   ;;  (message command)
   (let* ((search-dir (or dir default-directory))
-         (index-file (codesearch--csearchindex search-dir))
+         (index-file (or (and dir
+                              (string= command codesearch-cindex)
+                              (concat dir codesearch-csearchindex))
+                         (codesearch--csearchindex search-dir)))
          (process-environment (copy-alist process-environment)))
     (setenv "CSEARCHINDEX" (expand-file-name index-file))
     (apply
@@ -154,7 +157,7 @@ start. Returns the process object."
    (list
     (read-directory-name "Directory: ")))
   (set-process-filter
-   (codesearch-run-cindex nil dir)
+   (codesearch-run-cindex dir dir)
    'codesearch--handle-output))
 
 ;;;###autoload
