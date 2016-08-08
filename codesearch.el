@@ -4,7 +4,7 @@
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
-;; Package-Requires: ((dash "2.8.0") (s "1.10.0"))
+;; Package-Requires: ()
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -67,8 +67,6 @@
 
 (eval-when-compile
   (require 'cl))
-(require 'dash)
-(require 's)
 
 (defgroup codesearch nil
   "Variables related to codesearch."
@@ -101,14 +99,16 @@
   :group 'codesearch)
 
 (defun codesearch--find-dominant-csearchindex (dir)
-  "Search `dir' and its ancestors for the index, returning the path if found."
+  "Search `dir' and its ancestors for `codesearch-csearchindex',
+returning the path if found."
   (let* ((start-dir (expand-file-name dir))
          (index-dir (locate-dominating-file start-dir codesearch-csearchindex)))
     (if index-dir
         (concat index-dir codesearch-csearchindex))))
 
 (defun codesearch--csearchindex (dir)
-  "Get the full path to the index to use for searches starting in `dir'."
+  "Get the full path to the index to use for searches that start
+in `dir'."
   (expand-file-name (or codesearch-global-csearchindex
                         (codesearch--find-dominant-csearchindex dir)
                         (error "Can't find csearchindex"))))
