@@ -135,21 +135,22 @@ BUFF is assumed to contain the output from running csearch.
                 (buff (get-buffer-create "*codesearch-results*"))
                 (proc (codesearch-run-csearch
                        default-directory
-                       "-f" file-pattern
-                       "-n"
-                       pattern)))
+                       (list "-f" file-pattern
+                             "-n" pattern))))
 
     (with-current-buffer buff
       (read-only-mode 0)
       (erase-buffer))
 
-    (set-process-sentinel proc
+    (set-process-sentinel
+     proc
      #'(lambda (process event)
          (when (string-equal event "finished\n")
            (listing-codesearch--make-filenames-clickable buff)
            (pop-to-buffer buff))))
 
-    (set-process-filter proc
+    (set-process-filter
+     proc
      #'(lambda (process output)
          (let ((switch-to-visible-buffer t))
            (with-current-buffer buff
