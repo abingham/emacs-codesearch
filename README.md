@@ -35,7 +35,8 @@ Then just `require` it somewhere in your Emacs configuration:
 (require 'codesearch)
 ```
 
-(Note that the various UI packages will also `require` codesearch, so this step may not be strictly necessary).
+(Note that the various UI packages will also `require` codesearch, so this step
+may not be strictly necessary).
 
 ### Configuring your index files(s)
 
@@ -57,7 +58,10 @@ when `codesearch.el` performs operations it will look for the file
 `codesearch-csearchindex` in the current directory and its ancestors until one
 is found. If none is found, an error is raised.
 
-**NB:** At the time of writing there is no way to *create* new project-specific indices using `codesearch.el`. You'll need to create those outside of Emacs until [the issue is addressed](https://github.com/abingham/emacs-codesearch/issues/4).
+**NB:** At the time of writing there is no way to *create* new project-specific
+indices using `codesearch.el`. You'll need to create those outside of Emacs
+until
+[the issue is addressed](https://github.com/abingham/emacs-codesearch/issues/4).
 
 ### Further configuration
 
@@ -74,3 +78,40 @@ in order to manage your indices.
  * `codeseearch-update-index` - This command updates the currently configured
    index by rescanning all of the directories that it already contains.
  * `codesearch-reset` - This removes the currently configured index completely.
+
+## List-oriented UI with `listing-codesearch.el`
+
+`listing-codesearch` provides a simple, list-oriented UI for displaying and
+interacting with codesearch results.
+
+### Installation
+
+It can be installed from [melpa](https://melpa.org):
+```
+M-x package-install listing-codesearch
+```
+
+Then just `require` it somewhere in your Emacs configuration:
+```
+(require 'listing-codesearch)
+```
+
+### Configuration
+
+`listing-codesearch` doesn't typically require any configuration, but check the
+`listing-codesearch` configuration group for full details.
+
+### Commands
+
+`listing-codesearch` provides two functions for displaying information.
+
+ * `listing-codesearch-search` - Perform a query on the currently configured
+   index and lists the results in a buffer. Clicking on individual results in
+   the output buffer will take you to those locations in the source code.
+
+ * `listing-codesearch-list-directories` - List the directories currently index
+   in the currently configured index.
+
+## Helm integration with `helm-codesearch.el`
+
+**TODO**
