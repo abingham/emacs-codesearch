@@ -161,7 +161,10 @@ start. Returns the process object."
   (interactive
    (let* ((dir (read-directory-name "Directory: "))
           (use-global (if codesearch-global-csearchindex (y-or-n-p "Use global index?")))
-          (index (if use-global codesearch-global-csearchindex (read-file-name "Index:" dir codesearch-csearchindex))))
+          (index (if use-global
+                     codesearch-global-csearchindex
+                   (concat (read-directory-name "Index directory:" dir)
+                           codesearch-csearchindex))))
      (list dir index)))
   (set-process-filter
    (codesearch-run-cindex nil index-file dir)
