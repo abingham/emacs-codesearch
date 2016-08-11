@@ -1,6 +1,7 @@
 ;;; codesearch.el --- Core support for managing codesearch tools
 ;;
 ;; Author: Austin Bingham <austin.bingham@gmail.com>
+;;         Youngjoo Lee <youngker@gmail.com>
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
@@ -8,7 +9,7 @@
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
-;; Copyright (c) 2016 Austin Bingham
+;; Copyright (c) 2016 Austin Bingham, Youngjoo Lee
 ;;
 ;;; Commentary:
 ;;
