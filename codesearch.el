@@ -84,12 +84,19 @@
   :group 'codesearch)
 
 (defcustom codesearch-global-csearchindex nil
-  "The global index file. If defined, this will be used for all codesearch operations."
+  "The global index file.
+
+If defined, this will be used for all codesearch operations for
+which a more specific index is not available."
   :type '(string)
   :group 'codesearch)
 
 (defcustom codesearch-csearchindex ".csearchindex"
-  "The name of the index file which will be searched for if no global index is defined."
+  "The directory-specific index file name.
+
+When determining the index file to use for a codesearch
+operation, we initially search up the directory tree for
+the value of this option. If a match is found, it is used."
   :type '(string)
   :group 'codesearch)
 
@@ -101,16 +108,17 @@
 (defun codesearch--find-dominant-csearchindex (dir)
   "Search `dir' and its ancestors for `codesearch-csearchindex',
 returning the path if found."
-  (let* ((start-dir (expand-file-name dir))
-         (index-dir (locate-dominating-file start-dir codesearch-csearchindex)))
-    (if index-dir
-        (concat index-dir codesearch-csearchindex))))
+  (when codesearch-csearchindex
+    (let* ((start-dir (expand-file-name dir))
+           (index-dir (locate-dominating-file start-dir codesearch-csearchindex)))
+      (if index-dir
+          (concat index-dir codesearch-csearchindex)))))
 
 (defun codesearch--csearchindex (dir)
   "Get the full path to the index to use for searches that start
 in `dir'."
-  (expand-file-name (or codesearch-global-csearchindex
-                        (codesearch--find-dominant-csearchindex dir)
+  (expand-file-name (or (codesearch--find-dominant-csearchindex dir)
+                        codesearch-global-csearchindex
                         (error "Can't find csearchindex"))))
 
 (defun codesearch--handle-output (process output)
