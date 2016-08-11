@@ -5,7 +5,7 @@
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
-;; Package-Requires: ()
+;; Package-Requires: ((logito "0.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -69,6 +69,8 @@
 (eval-when-compile
   (require 'cl))
 
+(require 'logito)
+
 (defgroup codesearch nil
   "Variables related to codesearch."
   :prefix "codesearch-"
@@ -106,6 +108,12 @@ the value of this option. If a match is found, it is used."
   :type '(string)
   :group 'codesearch)
 
+(defconst codesearch--log
+  (logito-buffer-object
+   "codesearch-logger"
+   :buffer (get-buffer-create codesearch-output-buffer)
+   :level logito:info-level))
+
 (defun codesearch--find-dominant-csearchindex (dir)
   "Search `dir' and its ancestors for `codesearch-csearchindex',
 returning the path if found."
@@ -134,10 +142,12 @@ in `dir'."
 
 `dir' is the directory from which any index-file searches will
 start. Returns the process object."
-  ;;  (message command)
   (let* ((search-dir (or dir default-directory))
          (index-file (or index-file (codesearch--csearchindex search-dir)))
          (process-environment (copy-alist process-environment)))
+    (logito:info codesearch--log
+                 "Running %s %s from %s with index-file %s"
+                 command args dir index-file)
     (setenv "CSEARCHINDEX" (expand-file-name index-file))
     (apply
      'start-process
@@ -161,24 +171,37 @@ start. Returns the process object."
   "Add the contents of `dir' to `index-file'."
   (interactive
    (let* ((dir (read-directory-name "Directory: "))
-          (use-global (if codesearch-global-csearchindex (y-or-n-p "Use global index?")))
-          (index (if use-global
-                     codesearch-global-csearchindex
-                   (concat (read-directory-name "Index directory:" dir)
-                           codesearch-csearchindex))))
+          (proj-index (codesearch--find-dominant-csearchindex dir))
+          (use-proj-index (if proj-index
+                              (y-or-n-p (format "Use existing project index (%s)?" proj-index))))
+          (use-global (if (and (not use-proj-index)
+                               codesearch-global-csearchindex)
+                          (y-or-n-p (format "Use global index (%s)?" codesearch-global-csearchindex))))
+          (index (cond (use-proj-index proj-index)
+                       (use-global codesearch-global-csearchindex)
+                       (concat (read-directory-name "Index directory:" dir)
+                               codesearch-csearchindex))))
      (list dir index)))
-  (set-process-filter
-   (codesearch-run-cindex nil index-file dir)
-   'codesearch--handle-output))
+  (lexical-let ((dir dir)
+                (proc (codesearch-run-cindex nil index-file dir)))
+    (set-process-sentinel
+     proc
+     (lambda (proc event)
+       (logito:info codesearch--log "Build of %s complete" dir)))
+    (set-process-filter proc 'codesearch--handle-output)))
+
 
 ;;;###autoload
 (defun codesearch-update-index ()
   "Rescan all of the directories currently in the index, updating
 the index with the new contents."
   (interactive)
-  (set-process-filter
-   (codesearch-run-cindex)
-   'codesearch--handle-output))
+  (let ((proc (codesearch-run-cindex)))
+    (set-process-sentinel
+     proc
+     (lambda (proc event)
+       (logito:info codesearch--log "Update complete")))
+    (set-process-filter proc 'codesearch--handle-output)))
 
 ;;;###autoload
 (defun codesearch-reset ()
