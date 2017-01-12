@@ -5,7 +5,7 @@
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
-;; Package-Requires: ((logito "0.1"))
+;; Package-Requires: ((elog "0.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -69,7 +69,9 @@
 (eval-when-compile
   (require 'cl))
 
-(require 'logito)
+(require 'elog)
+
+(elog-open-log message "codesearch")
 
 (defgroup codesearch nil
   "Variables related to codesearch."
@@ -108,12 +110,6 @@ the value of this option. If a match is found, it is used."
   :type '(string)
   :group 'codesearch)
 
-(defconst codesearch--log
-  (logito-buffer-object
-   "codesearch-logger"
-   :buffer (get-buffer-create codesearch-output-buffer)
-   :level logito:info-level))
-
 (defun codesearch--find-dominant-csearchindex (dir)
   "Search `dir' and its ancestors for `codesearch-csearchindex',
 returning the path if found."
@@ -145,9 +141,11 @@ start. Returns the process object."
   (let* ((search-dir (or dir default-directory))
          (index-file (or index-file (codesearch--csearchindex search-dir)))
          (process-environment (copy-alist process-environment)))
-    (logito:info codesearch--log
-                 "Running %s %s from %s with index-file %s"
-                 command args dir index-file)
+    (codesearch-log
+     elog-info
+     "Running %s %s from %s with index-file %s"
+     command args dir index-file)
+
     (setenv "CSEARCHINDEX" (expand-file-name index-file))
     (apply
      'start-process
@@ -187,7 +185,7 @@ start. Returns the process object."
     (set-process-sentinel
      proc
      (lambda (proc event)
-       (logito:info codesearch--log "Build of %s complete" dir)))
+       (codesearch-log elog-info "Build of %s complete" dir)))
     (set-process-filter proc 'codesearch--handle-output)))
 
 
@@ -200,7 +198,7 @@ the index with the new contents."
     (set-process-sentinel
      proc
      (lambda (proc event)
-       (logito:info codesearch--log "Update complete")))
+       (codesearch-log elog-info "Update complete")))
     (set-process-filter proc 'codesearch--handle-output)))
 
 ;;;###autoload
