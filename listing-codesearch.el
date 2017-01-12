@@ -163,7 +163,7 @@ clickable buttons that link to the matched file/line-number.
   (interactive)
   (lexical-let ((buff (get-buffer-create "*codesearch-directories*"))
                 (proc (codesearch-run-cindex
-                       default-directory
+                       nil nil
                        "-list")))
     (with-current-buffer buff
       (read-only-mode 0)
