@@ -10,14 +10,10 @@ provide access to tool output, but they don't provide any sort of user
 interface.
 
 The second main part is a collection packages that provide user interfaces for
-the codesearch tools. Currently we have two interfaces:
+the codesearch tools. Currently we have:
 
  * `listing-codesearch.el` provides a very simple, listing-oriented display of
    results
- * `helm-codesearch.el` provides integration with the popular
-   [helm](https://github.com/emacs-helm/helm) framework
-
-These UI packages can be used independently or together.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-generate-toc again -->
 **Table of Contents**
@@ -31,7 +27,6 @@ These UI packages can be used independently or together.
     - [Installation](#installation)
     - [Configuration](#configuration)
     - [Commands](#commands)
-- [Helm integration with `helm-codesearch.el`](#helm-integration-with-helm-codesearchel)
 
 <!-- markdown-toc end -->
 
@@ -128,7 +123,3 @@ Then just `require` it somewhere in your Emacs configuration:
 
  * `listing-codesearch-list-directories` - List the directories currently index
    in the currently configured index.
-
-# Helm integration with `helm-codesearch.el`
-
-**TODO**
