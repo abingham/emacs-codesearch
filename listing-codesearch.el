@@ -148,7 +148,8 @@ clickable buttons that link to the matched file/line-number.
      #'(lambda (process event)
          (when (string-equal event "finished\n")
            (listing-codesearch--make-filenames-clickable buff)
-           (pop-to-buffer buff))))
+           (pop-to-buffer buff)
+           (read-only-mode 1))))
 
     (set-process-filter
      proc
