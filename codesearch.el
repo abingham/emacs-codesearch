@@ -1,14 +1,15 @@
 ;;; codesearch.el --- Core support for managing codesearch tools
 ;;
 ;; Author: Austin Bingham <austin.bingham@gmail.com>
+;;         Youngjoo Lee <youngker@gmail.com>
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
-;; Package-Requires: ((dash "2.8.0") (s "1.10.0"))
+;; Package-Requires: ((elog "0.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
-;; Copyright (c) 2016 Austin Bingham
+;; Copyright (c) 2016-2017 Austin Bingham, Youngjoo Lee
 ;;
 ;;; Commentary:
 ;;
@@ -67,8 +68,10 @@
 
 (eval-when-compile
   (require 'cl))
-(require 'dash)
-(require 's)
+
+(require 'elog)
+
+(elog-open-log message "codesearch")
 
 (defgroup codesearch nil
   "Variables related to codesearch."
@@ -86,12 +89,19 @@
   :group 'codesearch)
 
 (defcustom codesearch-global-csearchindex nil
-  "The global index file. If defined, this will be used for all codesearch operations."
+  "The global index file.
+
+If defined, this will be used for all codesearch operations for
+which a more specific index is not available."
   :type '(string)
   :group 'codesearch)
 
 (defcustom codesearch-csearchindex ".csearchindex"
-  "The name of the index file which will be searched for if no global index is defined."
+  "The directory-specific index file name.
+
+When determining the index file to use for a codesearch
+operation, we initially search up the directory tree for
+the value of this option. If a match is found, it is used."
   :type '(string)
   :group 'codesearch)
 
@@ -101,16 +111,19 @@
   :group 'codesearch)
 
 (defun codesearch--find-dominant-csearchindex (dir)
-  "Search `dir' and its ancestors for the index, returning the path if found."
-  (let* ((start-dir (expand-file-name dir))
-         (index-dir (locate-dominating-file start-dir codesearch-csearchindex)))
-    (if index-dir
-        (concat index-dir codesearch-csearchindex))))
+  "Search `dir' and its ancestors for `codesearch-csearchindex',
+returning the path if found."
+  (when codesearch-csearchindex
+    (let* ((start-dir (expand-file-name dir))
+           (index-dir (locate-dominating-file start-dir codesearch-csearchindex)))
+      (if index-dir
+          (concat index-dir codesearch-csearchindex)))))
 
 (defun codesearch--csearchindex (dir)
-  "Get the full path to the index to use for searches starting in `dir'."
-  (expand-file-name (or codesearch-global-csearchindex
-                        (codesearch--find-dominant-csearchindex dir)
+  "Get the full path to the index to use for searches that start
+in `dir'."
+  (expand-file-name (or (codesearch--find-dominant-csearchindex dir)
+                        codesearch-global-csearchindex
                         (error "Can't find csearchindex"))))
 
 (defun codesearch--handle-output (process output)
@@ -120,15 +133,19 @@
     (insert "\n")
     (insert output)))
 
-(defun codesearch--run-tool (dir command args)
+(defun codesearch--run-tool (dir command args &optional index-file)
   "Run `command' with CSEARCHINDEX variable set correctly.
 
 `dir' is the directory from which any index-file searches will
 start. Returns the process object."
-  (message command)
   (let* ((search-dir (or dir default-directory))
-         (index-file (codesearch--csearchindex search-dir))
+         (index-file (or index-file (codesearch--csearchindex search-dir)))
          (process-environment (copy-alist process-environment)))
+    (codesearch-log
+     elog-info
+     "Running %s %s from %s with index-file %s"
+     command args dir index-file)
+
     (setenv "CSEARCHINDEX" (expand-file-name index-file))
     (apply
      'start-process
@@ -137,41 +154,59 @@ start. Returns the process object."
      command
      args)))
 
-(defun codesearch-run-cindex (&optional dir &rest args)
+(defun codesearch-run-cindex (&optional dir index-file &rest args)
   "Run the cindex command passing `args' arguments."
   (codesearch--run-tool
-   dir codesearch-cindex args))
+   dir codesearch-cindex args index-file))
 
-(defun codesearch-run-csearch (&optional dir &rest args)
+(defun codesearch-run-csearch (&optional dir args)
   "Run the csearch command passing `args' arguments."
   (codesearch--run-tool
    dir codesearch-csearch args))
 
 ;;;###autoload
-(defun codesearch-build-index (dir)
-  "Add the contents of DIR to the index."
+(defun codesearch-build-index (dir index-file)
+  "Add the contents of `dir' to `index-file'."
   (interactive
-   (list
-    (read-directory-name "Directory: ")))
-  (set-process-filter
-   (codesearch-run-cindex nil dir)
-   'codesearch--handle-output))
+   (let* ((dir (read-directory-name "Directory: "))
+          (proj-index (codesearch--find-dominant-csearchindex dir))
+          (use-proj-index (if proj-index
+                              (y-or-n-p (format "Use existing project index (%s)?" proj-index))))
+          (use-global (if (and (not use-proj-index)
+                               codesearch-global-csearchindex)
+                          (y-or-n-p (format "Use global index (%s)?" codesearch-global-csearchindex))))
+          (index (cond (use-proj-index proj-index)
+                       (use-global codesearch-global-csearchindex)
+                       (t (concat (read-directory-name "Index directory:" dir)
+                                  codesearch-csearchindex)))))
+     (list dir index)))
+  (lexical-let ((dir dir)
+                (proc (codesearch-run-cindex nil index-file dir)))
+    (set-process-sentinel
+     proc
+     (lambda (proc event)
+       (codesearch-log elog-info "Build of %s complete" dir)))
+    (set-process-filter proc 'codesearch--handle-output)))
+
 
 ;;;###autoload
 (defun codesearch-update-index ()
   "Rescan all of the directories currently in the index, updating
 the index with the new contents."
   (interactive)
-  (set-process-filter
-   (codesearch-run-cindex)
-   'codesearch--handle-output))
+  (let ((proc (codesearch-run-cindex)))
+    (set-process-sentinel
+     proc
+     (lambda (proc event)
+       (codesearch-log elog-info "Update complete")))
+    (set-process-filter proc 'codesearch--handle-output)))
 
 ;;;###autoload
 (defun codesearch-reset ()
   "Reset (delete) the codesearch index."
   (interactive)
   (set-process-filter
-   (codesearch-run-cindex nil "-reset")
+   (codesearch-run-cindex nil nil "-reset")
    'codesearch--handle-output))
 
 (provide 'codesearch)

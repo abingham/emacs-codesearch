@@ -4,17 +4,17 @@
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
-;; Package-Requires: ()
+;; Package-Requires: ((dash "2.8.0))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
-;; Copyright (c) 2016 Austin Bingham
+;; Copyright (c) 2016-2017 Austin Bingham
 ;;
 ;;; Commentary:
 ;;
 ;; Description:
 ;;
-;; Provides a simple, listing-oriented UI for data from codesearch.
+;; Provides a simple, list-oriented UI for results from codesearch.
 ;;
 ;; For more details, see the project page at
 ;; https://github.com/abingham/emacs-codesearch
@@ -61,6 +61,7 @@
 ;;; Code:
 
 (require 'codesearch)
+(require 'dash)
 
 (defgroup listing-codesearch nil
   "Variables related to listing-codesearch."
@@ -91,10 +92,10 @@
   'button 't)
 
 (defun listing-codesearch--make-filenames-clickable (buff)
-  "Finds all codesearch matches in BUFF, turning them into
+  "Finds all codesearch matches in `buff', turning them into
 clickable buttons that link to the matched file/line-number.
 
-BUFF is assumed to contain the output from running csearch.
+`buff' is assumed to contain the output from running csearch.
 "
   (with-current-buffer buff
     (beginning-of-buffer)
@@ -122,7 +123,7 @@ BUFF is assumed to contain the output from running csearch.
 
 ;;;###autoload
 (defun listing-codesearch-search (pattern file-pattern)
-  "Search files matching FILE-PATTERN in the index for PATTERN."
+  "Search files matching `file-pattern'in the index for `pattern'."
   (interactive
    (list
     (read-string "Pattern: " (thing-at-point 'symbol)
@@ -135,37 +136,27 @@ BUFF is assumed to contain the output from running csearch.
                 (buff (get-buffer-create "*codesearch-results*"))
                 (proc (codesearch-run-csearch
                        default-directory
-                       "-f" file-pattern
-                       "-n"
-                       pattern)))
+                       (list "-f" file-pattern
+                             "-n" pattern))))
 
     (with-current-buffer buff
       (read-only-mode 0)
       (erase-buffer))
 
-    (set-process-sentinel proc
+    (set-process-sentinel
+     proc
      #'(lambda (process event)
          (when (string-equal event "finished\n")
            (listing-codesearch--make-filenames-clickable buff)
-           (pop-to-buffer buff))))
+           (pop-to-buffer buff)
+           (read-only-mode 1))))
 
-    (set-process-filter proc
+    (set-process-filter
+     proc
      #'(lambda (process output)
          (let ((switch-to-visible-buffer t))
            (with-current-buffer buff
              (insert output)))))))
-
-(defun listing-codesearch--handle-listing (results)
-  (let ((buff (get-buffer-create "*llamas codesearch-directories*"))
-        (switch-to-visible-buffer t)
-        (dirs (-slice (split-string results "\n") 0 -1)))
-    (with-current-buffer buff
-      (erase-buffer)
-      (insert "[codesearch: currently indexed directories]\n\n")
-      (mapcar
-       (lambda (dir) (insert (format "%s\n" dir)))
-       dirs))
-    (pop-to-buffer buff)))
 
 ;;;###autoload
 (defun listing-codesearch-list-directories ()
@@ -173,7 +164,7 @@ BUFF is assumed to contain the output from running csearch.
   (interactive)
   (lexical-let ((buff (get-buffer-create "*codesearch-directories*"))
                 (proc (codesearch-run-cindex
-                       nil
+                       nil nil
                        "-list")))
     (with-current-buffer buff
       (read-only-mode 0)
