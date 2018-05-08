@@ -72,7 +72,7 @@
   "The regular expression used to find matches in the codesearch output.")
 
 (defun counsel-codesearch--function (str)
-  "Executes codesearch to find matches for `str'."
+  "Execute codesearch to find match for STR."
   (if (< (length str) counsel-codesearch-mininum-input-length)
       (counsel-more-chars counsel-codesearch-mininum-input-length)
     (let ((index-file (codesearch--csearchindex default-directory))
@@ -84,10 +84,10 @@
                str)))
     '("" "working...")))
 
-(defun counsel-codesearch--handle-selection (selection) 
-  "Jump to the file/line indicated by `selection'."
+(defun counsel-codesearch--handle-selection (selection)
+  "Jump to the file/line indicated by SELECTION."
   (with-ivy-window
-    (when (and selection 
+    (when (and selection
                (string-match
                 counsel-codesearch--match-regex
                 selection))
@@ -110,5 +110,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
             :action 'counsel-codesearch--handle-selection
             :unwind #'counsel-delete-process
             :caller 'counsel-codesearch))
+
+(provide 'counsel-codesearch)
 
 ;;; counsel-codesearch.el ends here
