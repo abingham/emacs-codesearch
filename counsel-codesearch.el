@@ -73,8 +73,8 @@
 
 (defun counsel-codesearch--function (str)
   "Executes codesearch to find matches for `str'."
-  (if (< (length str) 'counsel-codesearch-mininum-input-length)
-      (counsel-more-chars 'counsel-codesearch-mininum-input-length)
+  (if (< (length str) counsel-codesearch-mininum-input-length)
+      (counsel-more-chars counsel-codesearch-mininum-input-length)
     (let ((index-file (codesearch--csearchindex default-directory))
           (process-environment (copy-alist process-environment)))
       (setenv "CSEARCHINDEX" (expand-file-name index-file))
@@ -93,8 +93,9 @@
                 selection))
       (let ((filename (match-string 1 selection))
             (line-number (string-to-number (match-string 2 selection))))
-        (find-file-other-window filename)
-        (goto-line line-number)))))
+        (find-file filename)
+        (goto-char (point-min))
+        (forward-line (- line-number 1))))))
 
 ;;;###autoload
 (defun counsel-codesearch (&optional initial-input)
