@@ -63,7 +63,7 @@
   :prefix "counsel-codesearch-"
   :group 'tools)
 
-(defcustom counsel-codesearch-mininum-input-length 3
+(defcustom counsel-codesearch-mininum-input-length 1
   "The minimum number of input characters before running a search."
   :type '(integer)
   :group 'codesearch-counsel)
