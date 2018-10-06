@@ -5,7 +5,7 @@
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
-;; Package-Requires: ((elog "0.1"))
+;; Package-Requires: ((log4e "0.3.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -69,9 +69,9 @@
 (eval-when-compile
   (require 'cl))
 
-(require 'elog)
+(require 'log4e)
 
-(elog-open-log message "codesearch")
+(log4e:deflogger "codesearch" "%t [%l] %m" "%H:%M:%S")
 
 (defgroup codesearch nil
   "Variables related to codesearch."
@@ -141,8 +141,7 @@ start. Returns the process object."
   (let* ((search-dir (or dir default-directory))
          (index-file (or index-file (codesearch--csearchindex search-dir)))
          (process-environment (copy-alist process-environment)))
-    (codesearch-log
-     elog-info
+    (codesearch--log-info
      "Running %s %s from %s with index-file %s"
      command args dir index-file)
 
@@ -185,7 +184,7 @@ start. Returns the process object."
     (set-process-sentinel
      proc
      (lambda (proc event)
-       (codesearch-log elog-info "Build of %s complete" dir)))
+       (codesearch--log-info "Build of %s complete" dir)))
     (set-process-filter proc 'codesearch--handle-output)))
 
 
@@ -198,7 +197,7 @@ the index with the new contents."
     (set-process-sentinel
      proc
      (lambda (proc event)
-       (codesearch-log elog-info "Update complete")))
+       (codesearch--log-info "Update complete")))
     (set-process-filter proc 'codesearch--handle-output)))
 
 ;;;###autoload
