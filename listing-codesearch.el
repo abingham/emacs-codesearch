@@ -126,7 +126,8 @@ clickable buttons that link to the matched file/line-number.
   "Search files matching `file-pattern'in the index for `pattern'."
   (interactive
    (list
-    (read-string "Pattern: " (thing-at-point 'symbol)
+    ; default to word full match
+    (read-string "Pattern: " (format "\\b%s\\b" (thing-at-point 'symbol))
                  'listing-codesearch-pattern-history (car listing-codesearch-pattern-history))
     (read-string "File pattern: " ".*"
                  'listing-codesearch-file-pattern-history (car listing-codesearch-file-pattern-history))))
