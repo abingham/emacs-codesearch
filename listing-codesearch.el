@@ -4,7 +4,6 @@
 ;; Version: 1
 ;; URL: https://github.com/abingham/emacs-codesearch
 ;; Keywords: tools, development, search
-;; Package-Requires: ((dash "2.8.0))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -61,7 +60,6 @@
 ;;; Code:
 
 (require 'codesearch)
-(require 'dash)
 
 (defgroup listing-codesearch nil
   "Variables related to listing-codesearch."
