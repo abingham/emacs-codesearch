@@ -3,7 +3,7 @@
 These extensions allow you to use
 [codesearch](https://github.com/google/codesearch) from Emacs.
 
-This project comprises two main parts. First, `codesearch.el` containts
+This project comprises two main parts. First, `codesearch.el` contains
 low-level functionality for interacting with the codesearch tools `cindex` and
 `csearch`. These functions execute the tools, help manage your index files, and
 provide access to tool output, but they don't provide any sort of user
